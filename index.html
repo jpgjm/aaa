@@ -92,8 +92,7 @@
           <button>候補2</button>
         </div>
         <button>画像を切り替える</button>
-		<!-- 画像を保存ボタン -->
-<button id="saveImgBtn">画像を保存</button>
+        <button id="saveImgBtn">画像を保存</button>
       </div>
     </div>
   </div>
@@ -103,6 +102,9 @@
     const apiUrlDiv = document.getElementById("apiUrl");
     const menuBtn = document.getElementById("menuBtn");
     const menu = document.getElementById("menu");
+    const saveImgBtn = document.getElementById("saveImgBtn");
+
+    let currentImgUrl = ""; // 表示中の画像URLを保持
 
     function loadRandomImage() {
       const apis = [
@@ -111,7 +113,6 @@
       ];
       const url = apis[Math.floor(Math.random() * apis.length)];
 
-      // どのAPIを使用したか表示
       apiUrlDiv.textContent = url;
 
       if(url.includes("waifu.pics")) {
@@ -120,8 +121,9 @@
           .then(data => {
             if(data.url) {
               img.src = data.url;
+              currentImgUrl = data.url; // 保存
             } else {
-              console.warn("waifu.picsでURLが取得できませんでした。再取得します。");
+              console.warn("waifu.picsでURL取得失敗、再取得");
               loadRandomImage();
             }
           })
@@ -131,6 +133,7 @@
           });
       } else {
         img.src = url;
+        currentImgUrl = url; // 保存
       }
     }
 
@@ -171,27 +174,22 @@
       });
     }
 
-// 「画像を保存」ボタン
-const saveImgBtn = Array.from(document.querySelectorAll(".dropdown-menu button"))
-  .find(btn => btn.textContent === "画像を保存");
+    // 「画像を保存」ボタン
+    saveImgBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!currentImgUrl) return;
 
-if (saveImgBtn) {
-  saveImgBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
+      const a = document.createElement("a");
+      a.href = currentImgUrl;
 
-    // aタグを作ってダウンロード
-    const a = document.createElement("a");
-    a.href = img.src;
-    
-    // ファイル名を適当に設定
-    const ext = img.src.split('.').pop().split(/\#|\?/)[0];
-    a.download = `random_image.${ext}`;
-    
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  });
-}
+      const ext = currentImgUrl.split('.').pop().split(/\#|\?/)[0];
+      a.download = `random_image.${ext}`;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
   </script>
 </body>
 </html>
