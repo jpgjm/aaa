@@ -104,8 +104,6 @@
     const menu = document.getElementById("menu");
     const saveImgBtn = document.getElementById("saveImgBtn");
 
-    let currentImgUrl = ""; // 表示中の画像URLを保持
-
     function loadRandomImage() {
       const apis = [
         `https://t.alcy.cc/moez?ts=${Date.now()}`,
@@ -113,6 +111,7 @@
       ];
       const url = apis[Math.floor(Math.random() * apis.length)];
 
+      // 左下にどのAPIのURLを表示するか
       apiUrlDiv.textContent = url;
 
       if(url.includes("waifu.pics")) {
@@ -121,7 +120,7 @@
           .then(data => {
             if(data.url) {
               img.src = data.url;
-              currentImgUrl = data.url; // 保存
+              apiUrlDiv.textContent = data.url; // 表示中のURLを確定
             } else {
               console.warn("waifu.picsでURL取得失敗、再取得");
               loadRandomImage();
@@ -133,7 +132,6 @@
           });
       } else {
         img.src = url;
-        currentImgUrl = url; // 保存
       }
     }
 
@@ -177,19 +175,19 @@
     // 「画像を保存」ボタン
     saveImgBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (!currentImgUrl) return;
+      const urlToSave = apiUrlDiv.textContent; // 左下表示のURLを使う
+      if (!urlToSave) return;
 
       const a = document.createElement("a");
-      a.href = currentImgUrl;
+      a.href = urlToSave;
 
-      const ext = currentImgUrl.split('.').pop().split(/\#|\?/)[0];
+      const ext = urlToSave.split('.').pop().split(/\#|\?/)[0];
       a.download = `random_image.${ext}`;
 
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     });
-
   </script>
 </body>
 </html>
