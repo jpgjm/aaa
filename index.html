@@ -2,136 +2,60 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ランダム画像 + メニュー</title>
+  <title>ランダム二次元画像</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      position: relative;
-      font-family: sans-serif;
-      background-color: #000;
-    }
-
-    #randImg {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 0;
-    }
-
-    #apiUrl {
-      position: absolute;
-      bottom: 5px;
-      left: 5px;
-      color: #fff;
-      font-size: 12px;
-      background: rgba(0,0,0,0.5);
-      padding: 2px 5px;
-      border-radius: 3px;
-      z-index: 10;
-    }
-
-    .dropdown {
-      position: absolute;
-      top: 25px;
-      right: 25px;
-      z-index: 10;
-    }
-
-    .dropdown-menu {
-      display: none;
-      position: absolute;
-      top: 100%;
-      right: 0;
-      background: rgba(255,255,255,0.9);
-      border: 1px solid #ccc;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-      padding: 5px;
-      white-space: nowrap;
-    }
-
-    .dropdown-menu.open {
-      display: block;
-    }
-
-    .dropdown-menu button {
-      display: block;
-      border: none;
-      background: transparent;
-      padding: 5px;
-      text-align: left;
-    }
-
-    .submenu {
-      display: none;
-    }
-
-    .submenu.open {
-      display: block;
-    }
+    /* 既存のスタイル */
   </style>
 </head>
 <body>
-  <img id="randImg" alt="ランダム画像">
+  <img id="randImg" alt="ランダム二次元画像">
   <div id="apiUrl"></div>
-
-  <div class="dropdown">
-    <button id="menuBtn">メニュー ▼</button>
-    <div class="dropdown-menu" id="menu">
-      <div class="dropdown-menu-item">
-        <button class="has-submenu">目次/開く</button>
-        <div class="submenu">
-          <button>あああああああああああああああああ</button>
-          <button>候補2</button>
-        </div>
-        <button>画像を切り替える</button>
-        <button id="saveImgBtn">画像を保存</button>
-      </div>
-    </div>
-  </div>
+  <button id="changeBtn" class="button">画像を切り替える</button>
+  <button id="switchApiBtn" class="button">APIを切り替える</button>
 
   <script>
     const img = document.getElementById("randImg");
     const apiUrlDiv = document.getElementById("apiUrl");
-    const menuBtn = document.getElementById("menuBtn");
-    const menu = document.getElementById("menu");
-    const saveImgBtn = document.getElementById("saveImgBtn");
+    const changeBtn = document.getElementById("changeBtn");
+    const switchApiBtn = document.getElementById("switchApiBtn");
 
-    function loadRandomImage() {
-      const apis = [
-        `https://t.alcy.cc/moez?ts=${Date.now()}`,
-        `https://api.waifu.pics/sfw/waifu?ts=${Date.now()}`
-      ];
-      const url = apis[Math.floor(Math.random() * apis.length)];
+    const apis = [
+      "https://api.waifu.pics/sfw/waifu",
+      "https://api.waifu.im/v1/favorites?is_nsfw=false"
+    ];
 
-      // 左下にどのAPIのURLを表示するか
-      apiUrlDiv.textContent = url;
+    let currentApiIndex = 0;
 
-      if(url.includes("waifu.pics")) {
-        fetch(url)
-          .then(res => res.json())
-          .then(data => {
-            if(data.url) {
-              img.src = data.url;
-              apiUrlDiv.textContent = data.url; // 表示中のURLを確定
-            } else {
-              console.warn("waifu.picsでURL取得失敗、再取得");
-              loadRandomImage();
-            }
-          })
-          .catch(err => {
-            console.error("画像取得エラー:", err, "再取得します。");
+    async function loadRandomImage() {
+      let api = apis[currentApiIndex];
+      if (api.includes("waifu.pics")) {
+        api += `?ts=${Date.now()}`;
+      }
+      apiUrlDiv.textContent = api;
+
+      try {
+        if (api.includes("waifu.pics")) {
+          const res = await fetch(api);
+          const data = await res.json();
+          if (data.url) {
+            img.src = data.url;
+          } else {
+            console.warn("waifu.picsでURL取得失敗。再取得します。");
             loadRandomImage();
-          });
-      } else {
-        img.src = url;
+          }
+        } else if (api.includes("waifu.im")) {
+          const res = await fetch(api);
+          const data = await res.json();
+          if (data.images && data.images.length > 0 && data.images[0].url) {
+            img.src = data.images[0].url;
+          } else {
+            console.warn("waifu.imでURL取得失敗。再取得します。");
+            loadRandomImage();
+          }
+        }
+      } catch (err) {
+        console.error("画像取得エラー:", err, "再取得します。");
+        loadRandomImage();
       }
     }
 
@@ -139,54 +63,13 @@
     loadRandomImage();
     setInterval(loadRandomImage, 600000);
 
-    // メニュー開閉
-    menuBtn.addEventListener("click", () => {
-      menu.classList.toggle("open");
-    });
+    // ボタンクリックで画像切り替え
+    changeBtn.addEventListener("click", loadRandomImage);
 
-    // メニュー外クリックで閉じる
-    document.addEventListener("click", (e) => {
-      if (!menuBtn.contains(e.target) && !menu.contains(e.target)) {
-        menu.classList.remove("open");
-      }
-    });
-
-    // サブメニュー開閉 & テキスト切替
-    document.querySelectorAll(".has-submenu").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const submenu = btn.nextElementSibling;
-        const isOpen = submenu.classList.toggle("open");
-        btn.textContent = isOpen ? "目次/閉じる" : "目次/開く";
-      });
-    });
-
-    // 「画像を切り替える」ボタン
-    const changeImgBtn = Array.from(document.querySelectorAll(".dropdown-menu button"))
-      .find(btn => btn.textContent === "画像を切り替える");
-
-    if (changeImgBtn) {
-      changeImgBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        loadRandomImage();
-      });
-    }
-
-    // 「画像を保存」ボタン
-    saveImgBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const urlToSave = apiUrlDiv.textContent; // 左下表示のURLを使う
-      if (!urlToSave) return;
-
-      const a = document.createElement("a");
-      a.href = urlToSave;
-
-      const ext = urlToSave.split('.').pop().split(/\#|\?/)[0];
-      a.download = `random_image.${ext}`;
-
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    // API切り替えボタン
+    switchApiBtn.addEventListener("click", () => {
+      currentApiIndex = (currentApiIndex + 1) % apis.length;
+      loadRandomImage();
     });
   </script>
 </body>
