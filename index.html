@@ -1,124 +1,385 @@
-もちろんです！
-指定の Nekos API / Nekosia API / Nekos.best API を使った例に書き換えたコードを作りました。
-それぞれのAPIに応じてレスポンスの取り方を切り替えています。
-
 <!DOCTYPE html>
-<html lang="ja">
+<html>
+
 <head>
-  <meta charset="UTF-8">
-  <title>ランダム二次元画像</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #000;
-      font-family: sans-serif;
-      position: relative;
-    }
-    #randImg {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 0;
-    }
-    #apiUrl {
-      position: absolute;
-      bottom: 5px;
-      left: 5px;
-      color: #fff;
-      font-size: 12px;
-      background: rgba(0,0,0,0.5);
-      padding: 2px 5px;
-      border-radius: 3px;
-      z-index: 10;
-    }
-    .button {
-      position: absolute;
-      top: 5px;
-      padding: 5px 10px;
-      font-size: 14px;
-      border-radius: 5px;
-      border: none;
-      background-color: rgba(255,255,255,0.7);
-      cursor: pointer;
-      z-index: 10;
-    }
-    #changeBtn { left: 5px; }
-    #switchApiBtn { left: 150px; }
-  </style>
+	<style>
+		html {
+			scroll-behavior: smooth
+		}
+		
+		#randImg {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			transform: translate(-50%, -50%);
+			z-index: 0
+		}
+		
+		#apiUrl {
+			position: fixed;
+			bottom: 5px;
+			left: 5px;
+			color: #fff;
+			font-size: 12px;
+			background: rgba(0, 0, 0, .5);
+			padding: 2px 5px;
+			border-radius: 3px;
+			z-index: 100
+		}
+		
+		#menuWrapper {
+			top: 20px;
+			right: 20px;
+			position: fixed;
+			z-index: 100
+		}
+		
+		.button {
+			width: 100%;
+			height: 12.5vw;
+			font-size: 3.125vw
+			border: none;
+			border: 1px solid black;
+		}
+		
+		#menuDiv {
+			position: absolute;
+			top: 100%;
+			right: 0;
+			display: none;
+		}
+		
+		#tocDiv {
+			display: none
+		}
+		
+		h1, h2, li, p, ul {
+			margin: 0;
+			padding: 0
+		}
+		
+		ul {
+			list-style-position: inside
+		}
+		
+		ul li {
+			margin-bottom: 10px
+		}
+		
+		.content {
+			position: relative;
+			z-index: 20;
+			background: rgba(0,0,0,0.5);
+			padding: 20px;
+			border-radius: 25px;
+		}
+	</style>
 </head>
+
 <body>
-  <img id="randImg" alt="ランダム二次元画像">
-  <div id="apiUrl"></div>
-  <button id="changeBtn" class="button">画像を切り替える</button>
-  <button id="switchApiBtn" class="button">APIを切り替える</button>
-
-  <script>
-    const img = document.getElementById("randImg");
-    const apiUrlDiv = document.getElementById("apiUrl");
-    const changeBtn = document.getElementById("changeBtn");
-    const switchApiBtn = document.getElementById("switchApiBtn");
-
-    const apis = [
-      "https://nekos.best/api/v1/waifu",
-      "https://nekosapi.com/api/v2/img/waifu",
-      "https://nekosia.cat/api/v1/images/waifu"
-    ];
-
-    let currentApiIndex = 0;
-
-    async function loadRandomImage() {
-      const api = apis[currentApiIndex];
-      apiUrlDiv.textContent = api;
-
-      try {
-        const res = await fetch(api);
-        const data = await res.json();
-
-        // APIごとのレスポンス処理
-        if (api.includes("nekos.best")) {
-          if (data.results && data.results.length > 0 && data.results[0].url) {
-            img.src = data.results[0].url;
-          } else throw new Error("nekos.best 画像取得失敗");
-        } 
-        else if (api.includes("nekosapi.com")) {
-          if (data.url) {
-            img.src = data.url;
-          } else throw new Error("nekosapi 画像取得失敗");
-        } 
-        else if (api.includes("nekosia.cat")) {
-          if (data.url) {
-            img.src = data.url;
-          } else throw new Error("nekosia 画像取得失敗");
-        }
-      } catch (err) {
-        console.error("画像取得エラー:", err);
-        // エラー時は次のAPIに切り替えて再取得
-        currentApiIndex = (currentApiIndex + 1) % apis.length;
-        loadRandomImage();
-      }
-    }
-
-    // 初回表示と10分ごとの自動更新
-    loadRandomImage();
-    setInterval(loadRandomImage, 600000);
-
-    // ボタンで画像切り替え
-    changeBtn.addEventListener("click", loadRandomImage);
-
-    // API切り替えボタン
-    switchApiBtn.addEventListener("click", () => {
-      currentApiIndex = (currentApiIndex + 1) % apis.length;
-      loadRandomImage();
-    });
-  </script>
+	<img id="randImg" alt="ランダム画像を取得中">
+	<div id="apiUrl">
+	</div>
+	<div id="menuWrapper">
+		<button id="menuButton" class="button">メニュー/開く</button>
+		<div id="menuDiv">
+			<button id="menuTableOfContentsButton" class="button">目次/開く</button>
+			<div id="tocDiv">
+				<a href="#section-nonroot">非rootユーザー向け</a>
+				<ul>
+					<li><a href="#auxio">Auxio</a></li>
+					<li><a href="#tiles">Better Internet Tiles</a></li>
+					<li><a href="#clock">Clock</a></li>
+					<li><a href="#limes">LIMEs</a></li>
+					<li><a href="#ReVanced%20eXtended">ReVanced eXtended</a></li>
+					<li><a href="#ytdlnis">YTDLins</a></li>
+				</ul>
+			</div>
+			<button id="changeImgBtn" class="button">画像を切り替える</button>
+		</div>
+	</div>
+	<div class="content">
+		<h1>野良アプリ一覧</h1>
+		<hr>
+		<h2 id="section-nonroot">非rootユーザー向け</h2>
+		<ul>
+			<li id="auxio">
+				<a href="https://github.com/OxygenCobalt/Auxio">Auxio</a>
+				<p>シンプルな音楽プレイヤー。端末内に入っている音楽ファイルを再生する。 <br>
+					<a href="https://github.com/BobbyESP/Metadator">Metadator</a>の更新が来るまで待っている。
+				</p>
+			</li>
+			<li id="tiles">
+				<a href="https://github.com/CasperVerswijvelt/Better-Internet-Tiles">Better Internet Tiles</a>
+				<p>クイック設定パネルに「Wi-Fi」と「モバイルデータ」などのタイルを追加する。</p>
+			</li>
+			<li id="clock">
+				<a href="https://github.com/BlackyHawky/Clock">Clock</a>
+				<p>Googleの <a href="https://play.google.com/store/apps/details?id=com.google.android.deskclock&hl=ja&referrer=utm_source%3Dgoogle%26utm_medium%3Dorganic%26utm_term%3D%E6%99%82%E8%A8%88&pcampaignid=APPU_1_Oj41aLjmB5mF2roPkpSe-A0" target="_blank">時計</a>アプリと似たUIで操作がしやすい。</p>
+			</li>
+			<li id="limes">
+				<a href="https://github.com/areteruhiro/LIMEs">LIMEs: Adkiller for LINE</a>
+				<p>
+					<a href="https://github.com/Chipppppppppp/LIME">LIME: Ad-killer for LINE</a>のフォーク版であり機能が増えている。
+				</p>
+			</li>
+			<li id="ReVanced eXtended">
+				<a href="https://github.com/NoName-exe/revanced-extended">ReVanced eXtended</a>
+				<p>YouTubeのUIはそのままで広告ブロックやバックグラウンド再生ができる。</p>
+			</li>
+			<li id="ytdlnis">
+				<a href="https://github.com/deniscerri/ytdlnis">YTDLins</a>
+				<p>動画を保存したり音楽ファイルに変換できる。</p>
+			</li>
+		</ul>
+		<button id="a1">自己責任で利用するアプリ一覧を見る</button>
+		<div id="b2" style="display: none;">
+			<ul>
+				<li id="Mangayomi">
+					<a href="https://github.com/kodjodevf/mangayomi">Mangayomi</a>
+					<p>アニメ、漫画が見れる。</p>
+				</li>
+			</ul>
+		</div>
+		<hr>
+		<h2>rootユーザー向け</h2>
+		<ul>
+			<li>
+				<a href="https://github.com/WSTxda/ViperFX-RE-Releases">ViPER4Android FX Redesign (ViperFX RE)</a>
+			</li>
+			<p>イコライザー。</p>
+		</ul>
+		<hr>
+		<h2>Magisk モジュール</h2>
+		<ul>
+			<li id="Audio Modification Library Ryuki Mod Magisk Module">
+				<a href="https://www.pling.com/p/1981006/">Audio Modification Library Ryuki Mod Magisk Module</a>
+				<p>複数のオーディオmodを入れるときに競合しないようにする。</p>
+			</li>
+			<li id="Dfps">
+				<a href="https://github.com/yc9559/dfps">Dfps</a>
+				<p>固定式リフレッシュレートを擬似的に可変式リフレッシュレートを再現する。</p>
+			</li>
+			<li id="JamesDSP (Cross-platform Audio Effect / Digital Signal Processing library)">
+				<a href="https://github.com/james34602/JamesDSPManager">JamesDSP (Cross-platform Audio Effect / Digital Signal Processing library)</a>
+				<p>イコライザー。</p>
+			</li>
+			<li>
+				<a href="https://github.com/JingMatrix/LSPosed">LSPosed Framework</a>
+				<p>システムやアプリの動作を変更できるモジュール。</p>
+			</li>
+			<li>
+				<a href="https://github.com/j7b3y/QuickSwitch">QuickSwitch fork</a>
+				<p>サードパーティー製のサポートされているランチャーが「タスク管理ボタン」を使用できるようにする。</p>
+			</li>
+			<li>
+				<a href="https://github.com/PerformanC/ReZygisk">ReZygisk</a>
+				<p>Zygisk Nextのオープンソース版。</p>
+			</li>
+			<li>
+				<a href="https://github.com/dchristl/KernelSU-systemless-hosts">Systemless hosts for KernelSU</a>
+				<p>zygiskを搭載されていないrootマネージャーはこの類のモジュールを使わないとhostsが変更できない。</p>
+			</li>
+			<li>
+				<a href="https://github.com/jpgjm/Systemless-Debloater">Systemless-Debloater</a>
+				<p>システムレスでアプリを削除する。</p>
+			</li>
+			<li>
+				<a href="https://github.com/WSTxda/ViPERFX_RE">ViPERFX_RE</a>
+				<p>イコライザー。</p>
+			</li>
+			<li>
+				<a href="https://github.com/j-hc/zygisk-detach">zygisk-detach</a>
+				<p>対象のアプリに対してGoogle Playストアからの自動更新を無効化できる。</p>
+			</li>
+			<li>
+				<a href="https://github.com/jpgjm/Change-Volume-Step">Change-Volume-Step</a>
+				<p>1ボリューム当たりの音量を変更する。</p>
+			</li>
+			<li>
+				<a href="https://github.com/jpgjm/Removed-some-power-menu-and-battery-items">Removed-some-power-menu-and-battery-items</a>
+				<p>電源メニューの一部を非表示、バッテリーアイコンの非表示をする。（キャリア版Xperiaの場合はカメラ音を無効できる。）</p>
+			</li>
+		</ul>
+	</div>
+	<script>
+		const menuBtn = document.getElementById("menuButton");
+		
+		const menuDiv = document.getElementById("menuDiv");
+		
+		menuBtn.addEventListener("click", () => {
+			const isHidden = getComputedStyle(menuDiv).display === "none";
+			menuDiv.style.display = isHidden ? "block" : "none";
+			menuBtn.textContent = isHidden ? "メニュー/閉じる" : "メニュー/開く";
+		});
+		
+		document.addEventListener("click", e => {
+			if (!menuDiv.contains(e.target) && e.target !== menuBtn) {
+				menuDiv.style.display = "none";
+				menuBtn.textContent = "メニュー/開く";
+			}
+		});
+	</script>
+	<script>
+		const tocBtn = document.getElementById("menuTableOfContentsButton");
+		
+		const tocDiv = document.getElementById("tocDiv");
+		
+		tocBtn.addEventListener("click", e => {
+			e.stopPropagation();
+			const isHidden = getComputedStyle(tocDiv).display === "none";
+			tocDiv.style.display = isHidden ? "block" : "none";
+			tocBtn.textContent = isHidden ? "目次/閉じる" : "目次/開く";
+		});
+	</script>
+	<script>
+		const img = document.getElementById("randImg");
+		
+		const apiUrlDiv = document.getElementById("apiUrl");
+		
+		function loadRandomImage() {
+			const apis = [`https://t.alcy.cc/moez?ts=${Date.now()}`, `https://api.waifu.pics/sfw/waifu?ts=${Date.now()}`, `https://api.nekosapi.com/v4/images/random?ts=${Date.now()}`, `https://nekos.best/api/v2/waifu?ts=${Date.now()}`, `https://pic.re/image?ts=${Date.now()}`, `https://api.waifu.im/search?many=1`, `https://anichatapi.vercel.app/api/image?ts=${Date.now()}`, `https://bocchi-api.vercel.app/?ts=${Date.now()}`, `https://publicapi.dev/waifu-it-api/api/waifu/random?ts=${Date.now()}`];
+			const url = apis[Math.floor(Math.random() * apis.length)];
+			apiUrlDiv.textContent = url;
+		
+			function setImage(src) {
+				img.crossOrigin = "anonymous";
+				img.onload = () => {
+					const avgColor = getAverageColor(img);
+					applyMenuColor(avgColor);
+				};
+				img.src = src;
+			}
+			if (url.includes("waifu.pics")) {
+				fetch(url).then(res => res.json()).then(data => data.url ? setImage(data.url) : loadRandomImage()).catch(() => loadRandomImage());
+			} else if (url.includes("nekosapi.com")) {
+				fetch(url).then(res => res.json()).then(data => data && data[0] && data[0].url ? setImage(data[0].url) : loadRandomImage()).catch(() => loadRandomImage());
+			} else if (url.includes("nekos.best")) {
+				fetch(url).then(res => res.json()).then(data => data && data.results && data.results[0] && data.results[0].url ? setImage(data.results[0].url) : loadRandomImage()).catch(() => loadRandomImage());
+			} else if (url.includes("waifu.im")) {
+				fetch(url).then(res => res.json()).then(data => data.images && data.images[0] && data.images[0].url ? setImage(data.images[0].url) : loadRandomImage()).catch(() => loadRandomImage());
+			} else if (url.includes("anichatapi.vercel.app")) {
+				fetch(url).then(res => res.json()).then(data => data.image ? setImage(data.image) : loadRandomImage()).catch(() => loadRandomImage());
+			} else if (url.includes("bocchi-api.vercel.app")) {
+				fetch(url).then(res => setImage(res.url)).catch(() => loadRandomImage());
+			} else if (url.includes("waifu-it-api")) {
+				fetch(url).then(res => res.json()).then(data => data.image ? setImage(data.image) : loadRandomImage()).catch(() => loadRandomImage());
+			} else if (url.includes("pic.re")) {
+				setImage(url);
+			} else {
+				setImage(url);
+			}
+		}
+		
+		loadRandomImage();
+	</script>
+	<script>
+		const changeImgBtn = document.getElementById("changeImgBtn");
+		
+		changeImgBtn.addEventListener("click", e => {
+			e.stopPropagation();
+			loadRandomImage();
+		});
+	</script>
+	<script>
+		function getBrightness(rgb) {
+			const [r, g, b] = rgb.match(/\d+/g).map(Number);
+			return (r * 299 + g * 587 + b * 114) / 1e3;
+		}
+		
+		function rgbToArray(rgb) {
+			return rgb.match(/\d+/g).map(Number);
+		}
+		
+		function arrayToRgb(arr) {
+			return `rgb(${arr[0]},${arr[1]},${arr[2]})`;
+		}
+		
+		function getContrastColor(rgb, factor = .6) {
+			const [r, g, b] = rgbToArray(rgb);
+			const brightness = getBrightness(rgb);
+			if (brightness > 180) {
+				return arrayToRgb([r * (1 - factor), g * (1 - factor), b * (1 - factor)].map(x => Math.floor(x)));
+			} else {
+				return arrayToRgb([r + (255 - r) * factor, g + (255 - g) * factor, b + (255 - b) * factor].map(x => Math.floor(x)));
+			}
+		}
+		
+		function lightenColor(rgb, percent = .2) {
+			const [r, g, b] = rgbToArray(rgb);
+			return arrayToRgb([r + (255 - r) * percent, g + (255 - g) * percent, b + (255 - b) * percent].map(x => Math.floor(x)));
+		}
+		
+		function getAverageColor(img) {
+			const canvas = document.createElement("canvas");
+			const ctx = canvas.getContext("2d");
+			canvas.width = img.naturalWidth;
+			canvas.height = img.naturalHeight;
+			try {
+				ctx.drawImage(img, 0, 0);
+				const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+				let r = 0,
+					g = 0,
+					b = 0,
+					count = 0;
+				for (let i = 0; i < data.length; i += 40) {
+					r += data[i];
+					g += data[i + 1];
+					b += data[i + 2];
+					count++;
+				}
+				return arrayToRgb([Math.floor(r / count), Math.floor(g / count), Math.floor(b / count)]);
+			} catch (e) {
+				return "rgb(100,100,100)";
+			}
+		}
+		
+		function applyMenuColor(avgColor) {
+			const menuBtn = document.getElementById("menuButton");
+			const menuDiv = document.getElementById("menuDiv");
+			const tocBtn = document.getElementById("menuTableOfContentsButton");
+			const tocDiv = document.getElementById("tocDiv");
+			const apiUrlDiv = document.getElementById("apiUrl");
+			let bgColor = lightenColor(avgColor, .2);
+			menuBtn.style.background = bgColor;
+			menuDiv.style.background = bgColor;
+			tocBtn.style.background = bgColor;
+			const textColor = getContrastColor(bgColor, .6);
+			[menuBtn, tocBtn].forEach(b => {
+				b.style.color = textColor;
+				b.style.textShadow = "1px 1px 2px rgba(0,0,0,0.5)";
+			});
+			menuDiv.querySelectorAll("button").forEach(b => {
+				b.style.background = bgColor;
+				b.style.color = textColor;
+				b.style.textShadow = "1px 1px 2px rgba(0,0,0,0.5)";
+			});
+			const contentDiv = document.querySelector(".content");
+			contentDiv.style.color = textColor;
+			contentDiv.querySelectorAll("a").forEach(link => {
+				link.style.color = textColor;
+				link.style.textDecoration = "none";
+			});
+			tocDiv.querySelectorAll("a").forEach(link => {
+				link.style.color = textColor;
+				link.style.textDecoration = "none";
+			});
+			const brightness = getBrightness(textColor);
+			if (brightness > 180) {
+				contentDiv.style.background = "rgba(0,0,0,0.5)";
+			} else {
+				contentDiv.style.background = "rgba(255,255,255,0.5)";
+			}
+		}
+		
+		window.updateMenuColorFromImage = function(img) {
+			const avg = getAverageColor(img);
+			applyMenuColor(avg);
+		};
+	</script>
 </body>
-</html>
 
+</html>
